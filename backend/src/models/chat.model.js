@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const chatSchema = new mongoose.Schema(
   {
     user: {
-      types: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
