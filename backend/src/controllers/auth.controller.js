@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import cookieparser from "cookie-parser";
 
 import { sendEmail } from "../services/mail.service.js";
 import userModel from "../models/user.model.js";
@@ -78,34 +77,52 @@ export async function login(req, res) {
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
-  res.cookie("token", token);
+  const isProd = process.env.NODE_ENV === "production";
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProd, // true on HTTPS in production
+    sameSite: isProd ? "lax" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches JWT expiry)
+    path: "/",
+  });
   res.status(200).json({
     message: "Login successful",
     success: true,
-    user,
+    user: {
+      username: user.username,
+      email: user.email,
+      verified: user.verified,
+      id: user._id,
+    },
   });
 }
 
-export async function getMe(req,res){
+export async function getMe(req, res) {
   const token = req.user.id;
   const user = await userModel.findById(token).select("-password");
-  if(!user){
+  if (!user) {
     return res.status(404).json({
-      message:"User not found",
-      success:false,
-      err:"No user with this id"
+      message: "User not found",
+      success: false,
+      err: "No user with this id",
     });
   }
   res.status(200).json({
-    message:"User details fetched successfully",
-    success:true,
-    user
+    message: "User details fetched successfully",
+    success: true,
+    user: {
+      username: user.username,
+      email: user.email,
+      verified: user.verified,
+      id: user._id,
+    },
   });
 }
 
 export async function verifyEmail(req, res) {
   const { token } = req.query;
-  const user = null;
+  let user = null;
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

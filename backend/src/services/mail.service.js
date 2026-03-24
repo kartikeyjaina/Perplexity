@@ -14,6 +14,8 @@ oauth2Client.setCredentials({
   refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
 });
 
+let cachedTransporter = null;
+
 async function createTransporter() {
   const accessToken = await oauth2Client.getAccessToken();
 
@@ -29,16 +31,18 @@ async function createTransporter() {
     },
   });
 }
-const transporter = await createTransporter();
 
-await transporter
-  .verify()
-  .then(() => console.log("Email transporter ready"))
-  .catch((err) => console.error("Verification failed:", err));
+async function getTransporter() {
+  if (!cachedTransporter) {
+    cachedTransporter = await createTransporter();
+    await cachedTransporter.verify();
+    console.log("Email transporter ready");
+  }
+
+  return cachedTransporter;
+}
 
 export async function sendEmail({ to, subject, html, text }) {
-  const transporter = await createTransporter(); // ✅ FIX
-
   const mailOptions = {
     from: process.env.GOOGLE_USER,
     to,
@@ -47,6 +51,18 @@ export async function sendEmail({ to, subject, html, text }) {
     text,
   };
 
-  const details = await transporter.sendMail(mailOptions);
-  console.log("Email sent:", details);
+  try {
+    const transporter = await getTransporter();
+    const details = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", details);
+    return details;
+  } catch (err) {
+    console.error("Email send failed. Retrying with fresh transporter:", err);
+    cachedTransporter = null;
+
+    const transporter = await getTransporter();
+    const details = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", details);
+    return details;
+  }
 }

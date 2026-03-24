@@ -40,4 +40,6 @@ export const loginValidator = [
     .isEmail()
     .withMessage("Invalid email format"),
   body("password").notEmpty().withMessage("Password is required"),
+
+  validate,
 ];
