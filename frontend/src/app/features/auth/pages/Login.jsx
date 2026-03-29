@@ -12,7 +12,9 @@ const Login = () => {
     const payload = { email, password };
     try {
       await handleLogin(payload);
-      navigate("/");
+      if (success) {
+        navigate("/");
+      }
     } catch (error) {
       // Error handling is done in the hook, so we can just log it here if needed
       console.error("Login failed:", error);
@@ -45,8 +47,13 @@ const Login = () => {
               />
             </div>
             <div>
-                <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-200">Password</label>
-                <input
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-zinc-200"
+              >
+                Password
+              </label>
+              <input
                 type="password"
                 id="password"
                 value={password}
@@ -56,9 +63,22 @@ const Login = () => {
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-zinc-100 outline-none ring-0 transition focus:border-[#31b8c6] focus:shadow-[0_0_0_3px_rgba(49,184,198,0.25)]"
               />
             </div>
-            <button type="Submit" className="w-full rounded-lg bg-[#31b8c6] px-4 py-3 font-semibold text-zinc-950 transition hover:bg-[#45c7d4] focus:outline-none focus:shadow-[0_0_0_3px_rgba(49,184,198,0.35)]">Submit</button>
+            <button
+              type="Submit"
+              className="w-full rounded-lg bg-[#31b8c6] px-4 py-3 font-semibold text-zinc-950 transition hover:bg-[#45c7d4] focus:outline-none focus:shadow-[0_0_0_3px_rgba(49,184,198,0.35)]"
+            >
+              Submit
+            </button>
           </form>
-          <p className="mt-6 text-center text-sm text-zinc-300">Don&apos;t have an account?{' '} <Link to="/register" className="font-semibold text-[#31b8c6] transition hover:text-[#45c7d4]">Register</Link></p>
+          <p className="mt-6 text-center text-sm text-zinc-300">
+            Don&apos;t have an account?{" "}
+            <Link
+              to="/register"
+              className="font-semibold text-[#31b8c6] transition hover:text-[#45c7d4]"
+            >
+              Register
+            </Link>
+          </p>
         </div>
       </div>
     </section>
