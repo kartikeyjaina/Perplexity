@@ -7,7 +7,8 @@ import {
   login,
   register,
   verifyEmail,
-  getMe
+  getMe,
+  logout
 } from "../controllers/auth.controller.js";
 import { authuser } from "../middlewares/auth.middleware.js";
 
@@ -24,5 +25,8 @@ authRouter.get("/get-me",authuser, getMe);
 
 //verify email endpoint
 authRouter.get("/verify-email", verifyEmail);
+
+//logout endpoint
+authRouter.post("/logout", logout);
 
 export default authRouter;
