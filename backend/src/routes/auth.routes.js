@@ -10,7 +10,7 @@ import {
   getMe,
   logout
 } from "../controllers/auth.controller.js";
-import { authuser } from "../middlewares/auth.middleware.js";
+import { authUser } from "../middlewares/auth.middleware.js";
 
 const authRouter = Router();
 
@@ -21,7 +21,7 @@ authRouter.post("/register", registerValidator, register);
 authRouter.post("/login", loginValidator, login);
 
 //get user details endpoint
-authRouter.get("/get-me",authuser, getMe);
+authRouter.get("/get-me",authUser, getMe);
 
 //verify email endpoint
 authRouter.get("/verify-email", verifyEmail);
