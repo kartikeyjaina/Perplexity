@@ -13,10 +13,10 @@ const chatRouter = Router();
 
 chatRouter.post("/message", authUser, sendMessage);
 
-chatRouter.get("/chats", authUser, getChats);
+chatRouter.get("/", authUser, getChats);
 
-chatRouter.get("/chats/:chatId/messages", authUser, getMessages);
+chatRouter.get("/:chatId/messages", authUser, getMessages);
 
-chatRouter.delete("/chats/:chatId", authUser, deleteChat);
+chatRouter.delete("/:chatId", authUser, deleteChat);
 
 export default chatRouter;

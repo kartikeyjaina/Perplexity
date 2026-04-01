@@ -9,8 +9,8 @@ export async function sendMessage(req, res) {
   let title = null;
 
   if (!chatId) {
-    const title = await generateChatTitle(message);
-    let chat = await chatModel.create({
+    title = await generateChatTitle(message);
+    chat = await chatModel.create({
       user: req.user.id,
       title,
     });
@@ -23,7 +23,7 @@ export async function sendMessage(req, res) {
   });
 
   // If chatId is provided, find the existing chat
-  const messages = await messageModel.find({ chat: chat._id || chat._id });
+  const messages = await messageModel.find({ chat: chat._id || chatId });
 
   // generate a response based on the message and the chat history
   const result = await generateResponse(messages);
