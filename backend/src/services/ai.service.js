@@ -1,6 +1,9 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ChatMistralAI } from "@langchain/mistralai";
-import { HumanMessage, SystemMessage, AIMessage } from "langchain";
+import { HumanMessage, SystemMessage, AIMessage,tool,createAgent } from "langchain";
+import * as z from "zod";
+import { searchInternet } from "./internet.service.js";
+
 const geminiModel = new ChatGoogleGenerativeAI({
   model: "gemini-2.5-flash-lite",
   apiKey: process.env.GEMINI_API_KEY,
@@ -10,6 +13,17 @@ const mistralModel = new ChatMistralAI({
   model: "mistral-small-latest",
   apiKey: process.env.MISTRAL_API_KEY,
 });
+
+const searchInternetTool = tool(
+  searchInternet,
+  {
+    name: "search_internet",
+    description: "Use this tool to search the internet for letestt information.",
+    inputSchema: z.object({
+      query:z.string().describe("The search query to look up on the internet")
+    }),
+  }
+)
 
 export async function generateResponse(messages) {
   const formattedMessages = messages.map((msg) => {

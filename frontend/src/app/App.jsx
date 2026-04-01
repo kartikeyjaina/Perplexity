@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { RouterProvider } from "react-router";
 
 import { router } from "./app.routes";
-import { useAuth } from "./features/auth/hooks/useAuth";
+import { useAuth } from "../features/auth/hooks/useAuth";
 
 function App() {
   const { handleGetMe } = useAuth();
