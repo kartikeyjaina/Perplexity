@@ -57,7 +57,7 @@ const Dashboard = () => {
           <div className='messages flex-1 space-y-3 overflow-y-auto pr-1 pb-30'>
             {chats[ currentChatId ]?.messages.map((message) => (
               <div
-                key={message.id}
+                key={index}
                 className={`max-w-[82%] w-fit rounded-2xl px-4 py-3 text-sm md:text-base ${message.role === 'user'
                     ? 'ml-auto rounded-br-none bg-white/12 text-white'
                     : 'mr-auto border-none text-white/90'

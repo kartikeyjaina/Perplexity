@@ -9,7 +9,7 @@ export function initSocket(httpserver) {
       credentials: true,
     },
   });
-  console.log(process.env.FRONTEND_URL);
+  console.log(process.env.FRONTEND_URL||"http://localhost:5173");
   console.log("socket.io initialized");
   io.on("connection", (socket) => {
     console.log("New client connected: " + socket.id);
