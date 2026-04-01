@@ -3,13 +3,15 @@ import { Server } from "socket.io";
 let io;
 
 export function initSocket(httpserver) {
+  const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+
   io = new Server(httpserver, {
     cors: {
-      origin: [process.env.FRONTEND_URL],
+      origin: [frontendOrigin],
       credentials: true,
     },
   });
-  console.log(process.env.FRONTEND_URL||"http://localhost:5173");
+  console.log(frontendOrigin);
   console.log("socket.io initialized");
   io.on("connection", (socket) => {
     console.log("New client connected: " + socket.id);

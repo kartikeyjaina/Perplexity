@@ -8,8 +8,9 @@ export async function sendMessage(req, res) {
 
     if (!message || !message.trim()) {
       return res.status(400).json({
-        message: "Message is required",
         success: false,
+        message: "Message is required",
+        data: null,
       });
     }
 
@@ -30,8 +31,9 @@ export async function sendMessage(req, res) {
 
       if (!chat) {
         return res.status(404).json({
-          message: "Chat not found",
           success: false,
+          message: "Chat not found",
+          data: null,
         });
       }
     }
@@ -53,13 +55,22 @@ export async function sendMessage(req, res) {
       role: "ai",
     });
 
-    res.status(201).json({ title, chat, aiMessage, success: true });
+    res.status(201).json({
+      success: true,
+      message: "Message sent successfully",
+      data: {
+        title,
+        chat,
+        aiMessage,
+      },
+    });
   } catch (error) {
     console.error("sendMessage error:", error);
     res.status(500).json({
-      message: "Failed to send message",
       success: false,
+      message: "Failed to send message",
       err: error.message,
+      data: null,
     });
   }
 }
@@ -72,16 +83,19 @@ export async function getChats(req, res) {
       .sort({ updatedAt: -1 });
 
     res.status(200).json({
-      message: "Chats retrieved successfully",
-      chats,
       success: true,
+      message: "Chats retrieved successfully",
+      data: {
+        chats,
+      },
     });
   } catch (error) {
     console.error("getChats error:", error);
     res.status(500).json({
-      message: "Failed to get chats",
       success: false,
+      message: "Failed to get chats",
       err: error.message,
+      data: null,
     });
   }
 }
@@ -97,22 +111,25 @@ export async function getMessages(req, res) {
     if (!chat) {
       return res
         .status(404)
-        .json({ message: "Chat not found", success: false });
+        .json({ success: false, message: "Chat not found", data: null });
     }
     const messages = await messageModel
       .find({ chat: chatId })
       .sort({ createdAt: 1 });
     res.status(200).json({
-      message: "Messages retrieved successfully",
-      messages,
       success: true,
+      message: "Messages retrieved successfully",
+      data: {
+        messages,
+      },
     });
   } catch (error) {
     console.error("getMessages error:", error);
     res.status(500).json({
-      message: "Failed to get messages",
       success: false,
+      message: "Failed to get messages",
       err: error.message,
+      data: null,
     });
   }
 }
@@ -128,21 +145,25 @@ export async function deleteChat(req, res) {
     if (!chat) {
       return res
         .status(404)
-        .json({ message: "Chat not found", success: false });
+        .json({ success: false, message: "Chat not found", data: null });
     }
 
     await messageModel.deleteMany({ chat: chatId });
 
     res.status(200).json({
-      message: "Chat deleted successfully",
       success: true,
+      message: "Chat deleted successfully",
+      data: {
+        chatId,
+      },
     });
   } catch (error) {
     console.error("deleteChat error:", error);
     res.status(500).json({
-      message: "Failed to delete chat",
       success: false,
+      message: "Failed to delete chat",
       err: error.message,
+      data: null,
     });
   }
 }

@@ -20,40 +20,46 @@ export function useAuth() {
     }
   }, [dispatch]);
 
-  const handleRegister = useCallback(async ({ email, username, password }) => {
-    try {
-      dispatch(setLoading(true));
-      dispatch(setError(null));
-      await register({ email, username, password });
-      // User needs to verify email before login
-      dispatch(setError(null));
-    } catch (error) {
-      dispatch(
-        setError(error.response?.data?.message || "Registration failed"),
-      );
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }, [dispatch]);
+  const handleRegister = useCallback(
+    async ({ email, username, password }) => {
+      try {
+        dispatch(setLoading(true));
+        dispatch(setError(null));
+        await register({ email, username, password });
+        // User needs to verify email before login
+        dispatch(setError(null));
+      } catch (error) {
+        dispatch(
+          setError(error.response?.data?.message || "Registration failed"),
+        );
+      } finally {
+        dispatch(setLoading(false));
+      }
+    },
+    [dispatch],
+  );
 
-  const handleLogin = useCallback(async ({ email, password }) => {
-    try {
-      dispatch(setLoading(true));
-      dispatch(setError(null));
-      const data = await login({ email, password });
-      dispatch(setUser(data.user));
-    } catch (error) {
-      dispatch(setError(error.response?.data?.message || "Login failed"));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  }, [dispatch]);
+  const handleLogin = useCallback(
+    async ({ email, password }) => {
+      try {
+        dispatch(setLoading(true));
+        dispatch(setError(null));
+        const data = await login({ email, password });
+        dispatch(setUser(data?.data?.user || null));
+      } catch (error) {
+        dispatch(setError(error.response?.data?.message || "Login failed"));
+      } finally {
+        dispatch(setLoading(false));
+      }
+    },
+    [dispatch],
+  );
 
   const handleGetMe = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       const data = await getMe();
-      dispatch(setUser(data.user));
+      dispatch(setUser(data?.data?.user || null));
     } catch (err) {
       // Do not show global error for expected unauthenticated state.
       if (err?.response?.status !== 401) {

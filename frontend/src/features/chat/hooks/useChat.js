@@ -19,9 +19,13 @@ export const useChat = () => {
     async ({ message, chatId }) => {
       try {
         dispatch(setLoading(true));
+        dispatch(setError(null));
 
         const data = await sendMessage({ message, chatId });
-        const { chat, aiMessage } = data;
+        const { chat, aiMessage } = data?.data || {};
+        if (!chat?._id || !aiMessage) {
+          throw new Error("Invalid chat response");
+        }
 
         if (!chatId) {
           dispatch(
@@ -49,8 +53,8 @@ export const useChat = () => {
         );
 
         dispatch(setCurrentChatId(chat._id));
-      } catch {
-        dispatch(setError("Message failed"));
+      } catch (error) {
+        dispatch(setError(error?.response?.data?.message || "Message failed"));
       } finally {
         dispatch(setLoading(false));
       }
@@ -59,46 +63,62 @@ export const useChat = () => {
   );
 
   const handleGetChats = useCallback(async () => {
-    dispatch(setLoading(true));
-    const data = await getChats();
-    const { chats } = data;
-    dispatch(
-      setChats(
-        chats.reduce((acc, chat) => {
-          acc[chat._id] = {
-            id: chat._id,
-            title: chat.title,
-            messages: [],
-            lastUpdated: chat.updatedAt,
-          };
-          return acc;
-        }, {}),
-      ),
-    );
-    dispatch(setLoading(false));
+    try {
+      dispatch(setLoading(true));
+      dispatch(setError(null));
+
+      const data = await getChats();
+      const chats = data?.data?.chats || [];
+      dispatch(
+        setChats(
+          chats.reduce((acc, chat) => {
+            acc[chat._id] = {
+              id: chat._id,
+              title: chat.title,
+              messages: [],
+              lastUpdated: chat.updatedAt,
+            };
+            return acc;
+          }, {}),
+        ),
+      );
+    } catch (error) {
+      dispatch(
+        setError(error?.response?.data?.message || "Failed to fetch chats"),
+      );
+    } finally {
+      dispatch(setLoading(false));
+    }
   }, [dispatch]);
 
   const handleOpenChat = useCallback(
     async (chatId, chats) => {
-      console.log(chats[chatId]?.messages.length);
+      try {
+        dispatch(setError(null));
+        if (!chatId || !chats?.[chatId]) return;
 
-      if (chats[chatId]?.messages.length === 0) {
-        const data = await getMessages(chatId);
-        const { messages } = data;
+        if ((chats[chatId]?.messages || []).length === 0) {
+          const data = await getMessages(chatId);
+          const messages = data?.data?.messages || [];
 
-        const formattedMessages = messages.map((msg) => ({
-          content: msg.content,
-          role: msg.role,
-        }));
+          const formattedMessages = messages.map((msg) => ({
+            content: msg.content,
+            role: msg.role,
+          }));
 
+          dispatch(
+            addMessages({
+              chatId,
+              messages: formattedMessages,
+            }),
+          );
+        }
+        dispatch(setCurrentChatId(chatId));
+      } catch (error) {
         dispatch(
-          addMessages({
-            chatId,
-            messages: formattedMessages,
-          }),
+          setError(error?.response?.data?.message || "Failed to open chat"),
         );
       }
-      dispatch(setCurrentChatId(chatId));
     },
     [dispatch],
   );

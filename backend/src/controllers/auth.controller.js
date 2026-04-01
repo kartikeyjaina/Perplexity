@@ -30,12 +30,14 @@ export async function register(req, res) {
       });
 
       res.status(201).json({
-        message: "User registered successfully",
         success: true,
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
+        message: "User registered successfully",
+        data: {
+          user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+          },
         },
       });
     } catch (mongoErr) {
@@ -43,9 +45,10 @@ export async function register(req, res) {
       if (mongoErr.code === 11000) {
         const duplicateField = Object.keys(mongoErr.keyValue)[0];
         return res.status(400).json({
-          message: `User with this ${duplicateField} already exists`,
           success: false,
+          message: `User with this ${duplicateField} already exists`,
           err: `${duplicateField} already exists`,
+          data: null,
         });
       }
       throw mongoErr;
@@ -53,9 +56,10 @@ export async function register(req, res) {
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({
-      message: "Server error during registration",
       success: false,
+      message: "Server error during registration",
       err: error.message,
+      data: null,
     });
   }
 }
@@ -66,24 +70,27 @@ export async function login(req, res) {
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(401).json({
-        message: "Invalid email or password",
         success: false,
+        message: "Invalid email or password",
         err: "User not found",
+        data: null,
       });
     }
     if (!user.verified) {
       return res.status(403).json({
-        message: "Email not verified",
         success: false,
+        message: "Email not verified",
         err: "Please verify your email before logging in",
+        data: null,
       });
     }
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
-        message: "Invalid email or password",
         success: false,
+        message: "Invalid email or password",
         err: "Incorrect password",
+        data: null,
       });
     }
     const token = jwt.sign(
@@ -101,21 +108,24 @@ export async function login(req, res) {
       path: "/",
     });
     res.status(200).json({
-      message: "Login successful",
       success: true,
-      user: {
-        username: user.username,
-        email: user.email,
-        verified: user.verified,
-        id: user._id,
+      message: "Login successful",
+      data: {
+        user: {
+          username: user.username,
+          email: user.email,
+          verified: user.verified,
+          id: user._id,
+        },
       },
     });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
-      message: "Server error during login",
       success: false,
+      message: "Server error during login",
       err: error.message,
+      data: null,
     });
   }
 }
@@ -126,27 +136,31 @@ export async function getMe(req, res) {
     const user = await userModel.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({
-        message: "User not found",
         success: false,
+        message: "User not found",
         err: "No user with this id",
+        data: null,
       });
     }
     res.status(200).json({
-      message: "User details fetched successfully",
       success: true,
-      user: {
-        username: user.username,
-        email: user.email,
-        verified: user.verified,
-        id: user._id,
+      message: "User details fetched successfully",
+      data: {
+        user: {
+          username: user.username,
+          email: user.email,
+          verified: user.verified,
+          id: user._id,
+        },
       },
     });
   } catch (error) {
     console.error("GetMe error:", error);
     res.status(500).json({
-      message: "Server error fetching user data",
       success: false,
+      message: "Server error fetching user data",
       err: error.message,
+      data: null,
     });
   }
 }
@@ -159,15 +173,17 @@ export async function logout(req, res) {
       path: "/",
     });
     res.status(200).json({
-      message: "Logged out successfully",
       success: true,
+      message: "Logged out successfully",
+      data: null,
     });
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({
-      message: "Server error during logout",
       success: false,
+      message: "Server error during logout",
       err: error.message,
+      data: null,
     });
   }
 }
@@ -181,9 +197,10 @@ export async function verifyEmail(req, res) {
     user = await userModel.findOne({ email: decoded.email });
     if (!user) {
       return res.status(400).json({
-        message: "Invalid token",
         success: false,
+        message: "Invalid token",
         err: "User not found",
+        data: null,
       });
     }
     user.verified = true;
@@ -193,9 +210,10 @@ export async function verifyEmail(req, res) {
     res.send(html);
   } catch (err) {
     return res.status(400).json({
-      message: "Invalid or expired token",
       success: false,
+      message: "Invalid or expired token",
       err: err.message,
+      data: null,
     });
   }
 }
