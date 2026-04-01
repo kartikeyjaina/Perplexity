@@ -4,6 +4,7 @@ import Register from "../features/auth/pages/Register";
 import Protected from "../features/auth/components/Protected";
 import Dashboard from "../features/chat/pages/Dashboard";
 
+//create app routes
 export const router = createBrowserRouter([
   {
     path: "/login",
