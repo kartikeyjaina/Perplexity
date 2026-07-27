@@ -16,20 +16,49 @@ oauth2Client.setCredentials({
 
 let cachedTransporter = null;
 
-async function createTransporter() {
-  const accessToken = await oauth2Client.getAccessToken();
+function isOauthCredentialError(error) {
+  const message = `${error?.message || ""} ${error?.response?.data?.error || ""}`.toLowerCase();
+  return (
+    message.includes("invalid_grant") ||
+    message.includes("invalid_client") ||
+    message.includes("unauthorized_client") ||
+    message.includes("invalid_request")
+  );
+}
 
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      type: "OAuth2",
-      user: process.env.GOOGLE_USER,
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-      accessToken: accessToken?.token || accessToken,
-    },
-  });
+function formatMailError(error, fallbackMessage) {
+  const detail = error?.response?.data?.error_description || error?.message || fallbackMessage;
+  const wrappedError = new Error(fallbackMessage);
+  wrappedError.cause = error;
+  wrappedError.details = detail;
+  return wrappedError;
+}
+
+async function createTransporter() {
+  try {
+    const accessToken = await oauth2Client.getAccessToken();
+
+    return nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        type: "OAuth2",
+        user: process.env.GOOGLE_USER,
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        accessToken: accessToken?.token || accessToken,
+      },
+    });
+  } catch (error) {
+    if (isOauthCredentialError(error)) {
+      throw formatMailError(
+        error,
+        "Gmail OAuth credentials are invalid or expired",
+      );
+    }
+
+    throw formatMailError(error, "Failed to create mail transporter");
+  }
 }
 
 async function getTransporter() {
@@ -57,12 +86,24 @@ export async function sendEmail({ to, subject, html, text }) {
     console.log("Email sent:", details);
     return details;
   } catch (err) {
+    if (isOauthCredentialError(err)) {
+      cachedTransporter = null;
+      throw formatMailError(
+        err,
+        "Gmail OAuth credentials are invalid or expired",
+      );
+    }
+
     console.error("Email send failed. Retrying with fresh transporter:", err);
     cachedTransporter = null;
 
-    const transporter = await getTransporter();
-    const details = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", details);
-    return details;
+    try {
+      const transporter = await getTransporter();
+      const details = await transporter.sendMail(mailOptions);
+      console.log("Email sent:", details);
+      return details;
+    } catch (retryErr) {
+      throw formatMailError(retryErr, "Failed to send email");
+    }
   }
 }

@@ -18,26 +18,35 @@ export async function register(req, res) {
       );
       const verifyUrl = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${emailVerificationToken}`;
 
-      await sendEmail({
-        to: email,
-        subject: "Welcome to Perplexity!",
-        html: `
+      let emailSent = true;
+      try {
+        await sendEmail({
+          to: email,
+          subject: "Welcome to Perplexity!",
+          html: `
                     <p>Hi ${username},</p>
                     <p>Thank you for registering at <strong>Perplexity</strong>. We're excited to have you on board!</p>
                     <a href=${verifyUrl}>Verify Email</a>
                     <p>Best regards,<br>The Perplexity Team</p>
             `,
-      });
+        });
+      } catch (mailError) {
+        emailSent = false;
+        console.error("Verification email could not be sent:", mailError);
+      }
 
       res.status(201).json({
         success: true,
-        message: "User registered successfully",
+        message: emailSent
+          ? "User registered successfully"
+          : "User registered successfully, but the verification email could not be sent",
         data: {
           user: {
             id: user._id,
             username: user.username,
             email: user.email,
           },
+          emailSent,
         },
       });
     } catch (mongoErr) {
