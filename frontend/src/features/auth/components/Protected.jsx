@@ -4,10 +4,10 @@ import { Navigate } from "react-router";
 const Protected = ({ children }) => {
 
   const user = useSelector((state) => state.auth.user);
-  const loading = useSelector((state) => state.auth.loading);
+  const checkingAuth = useSelector((state) => state.auth.checkingAuth);
 
-  if (loading) return <div>Loading...</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (checkingAuth) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/register" replace />;
   return children;
 };
 
