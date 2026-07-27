@@ -26,13 +26,10 @@ const chatSlice = createSlice({
         state.chats[chatId].messages = [];
       }
 
-      const lastMessage =
-        state.chats[chatId].messages[state.chats[chatId].messages.length - 1];
-      if (
-        lastMessage &&
-        lastMessage.content === content &&
-        lastMessage.role === role
-      ) {
+      const alreadyExists = state.chats[chatId].messages.some(
+        (message) => message.content === content && message.role === role,
+      );
+      if (alreadyExists) {
         return;
       }
 

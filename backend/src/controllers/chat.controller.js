@@ -1,6 +1,7 @@
 import chatModel from "../models/chat.model.js";
 import messageModel from "../models/message.model.js";
 import { generateResponse, generateChatTitle } from "../services/ai.service.js";
+import { getIO } from "../sockets/server.socket.js";
 
 export async function sendMessage(req, res) {
   try {
@@ -54,6 +55,27 @@ export async function sendMessage(req, res) {
       content: result,
       role: "ai",
     });
+
+    try {
+      const io = getIO();
+      io.to(`user:${req.user.id}`).emit("chat:message", {
+        chatId: chat._id.toString(),
+        chat: {
+          _id: chat._id.toString(),
+          title: chat.title,
+        },
+        userMessage: {
+          content: message,
+          role: "user",
+        },
+        aiMessage: {
+          content: aiMessage.content,
+          role: aiMessage.role,
+        },
+      });
+    } catch (socketError) {
+      console.error("Socket emit failed:", socketError);
+    }
 
     res.status(201).json({
       success: true,

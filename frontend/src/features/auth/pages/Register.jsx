@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "../hooks/useAuth";
 import { clearError } from "../auth.slice";
@@ -7,7 +8,7 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { handleRegister } = useAuth();
   const error = useSelector((state) => state.auth.error);
@@ -20,10 +21,9 @@ const Register = () => {
 
   const submitForm = async (e) => {
     e.preventDefault();
-    setSubmitted(false);
     const payload = { email, username, password };
     await handleRegister(payload);
-    setSubmitted(true);
+    navigate("/");
   };
   return (
     <section className="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
@@ -36,12 +36,6 @@ const Register = () => {
           {error && (
             <div className="mt-4 rounded-lg bg-red-950/50 px-4 py-3 text-sm text-red-200 border border-red-800">
               {error}
-            </div>
-          )}
-          {submitted && !error && (
-            <div className="mt-4 rounded-lg bg-green-950/50 px-4 py-3 text-sm text-green-200 border border-green-800">
-              <p className="font-semibold">✓ Registration successful!</p>
-              <p className="mt-2">You can log in now.</p>
             </div>
           )}
           <form onSubmit={submitForm} className="mt-8 space-y-5">

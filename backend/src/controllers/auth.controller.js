@@ -1,6 +1,23 @@
 import jwt from "jsonwebtoken";
 import userModel from "../models/user.model.js";
 
+function createAuthCookie(res, userId, email) {
+  const token = jwt.sign(
+    { id: userId, email },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" },
+  );
+  const isProd = process.env.NODE_ENV === "production";
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "strict" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
+  });
+}
+
 export async function register(req, res) {
   try {
     const { username, email, password } = req.body;
@@ -8,6 +25,7 @@ export async function register(req, res) {
     // Attempt to create user (handles race condition with unique indexes)
     try {
       const user = await userModel.create({ username, email, password });
+      createAuthCookie(res, user._id, user.email);
 
       res.status(201).json({
         success: true,
@@ -65,20 +83,7 @@ export async function login(req, res) {
         data: null,
       });
     }
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
-    const isProd = process.env.NODE_ENV === "production";
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
+    createAuthCookie(res, user._id, user.email);
     res.status(200).json({
       success: true,
       message: "Login successful",

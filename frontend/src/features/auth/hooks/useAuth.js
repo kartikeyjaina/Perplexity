@@ -31,12 +31,15 @@ export function useAuth() {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-        await register({ email, username, password });
+        const data = await register({ email, username, password });
+        dispatch(setUser(data?.data?.user || null));
         dispatch(setError(null));
+        return data;
       } catch (error) {
         dispatch(
           setError(error.response?.data?.message || "Registration failed"),
         );
+        throw error;
       } finally {
         dispatch(setLoading(false));
       }

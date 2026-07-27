@@ -1,4 +1,7 @@
-import { initializeSocketConnection } from "../service/chat.socket";
+import {
+  initializeSocketConnection,
+  disconnectSocket,
+} from "../service/chat.socket";
 import { sendMessage, getChats, getMessages } from "../service/chat.api";
 import {
   setChats,
@@ -14,6 +17,48 @@ import { useCallback } from "react";
 
 export const useChat = () => {
   const dispatch = useDispatch();
+
+  const handleIncomingChatMessage = useCallback(
+    ({ chatId, chat, userMessage, aiMessage }) => {
+      if (!chatId) return;
+
+      if (chat && chat.title) {
+        dispatch(
+          createNewChat({
+            chatId,
+            title: chat.title,
+          }),
+        );
+      }
+
+      if (userMessage) {
+        dispatch(
+          addNewMessage({
+            chatId,
+            content: userMessage.content,
+            role: userMessage.role,
+          }),
+        );
+      }
+
+      if (aiMessage) {
+        dispatch(
+          addNewMessage({
+            chatId,
+            content: aiMessage.content,
+            role: aiMessage.role,
+          }),
+        );
+      }
+
+      dispatch(setCurrentChatId(chatId));
+    },
+    [dispatch],
+  );
+
+  const initSocket = useCallback(() => {
+    initializeSocketConnection({ onChatMessage: handleIncomingChatMessage });
+  }, [handleIncomingChatMessage]);
 
   const handleSendMessage = useCallback(
     async ({ message, chatId }) => {
@@ -124,7 +169,8 @@ export const useChat = () => {
   );
 
   return {
-    initializeSocketConnection,
+    initSocket,
+    disconnectSocket,
     handleSendMessage,
     handleGetChats,
     handleOpenChat,

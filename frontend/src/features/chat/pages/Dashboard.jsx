@@ -8,7 +8,8 @@ import { deleteChat } from "../service/chat.api";
 
 const Dashboard = () => {
   const {
-    initializeSocketConnection,
+    initSocket,
+    disconnectSocket,
     handleGetChats,
     handleSendMessage,
     handleOpenChat,
@@ -24,9 +25,10 @@ const Dashboard = () => {
   const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
-    initializeSocketConnection();
+    initSocket();
     handleGetChats();
-  }, [initializeSocketConnection, handleGetChats]);
+    return () => disconnectSocket();
+  }, [initSocket, disconnectSocket, handleGetChats]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

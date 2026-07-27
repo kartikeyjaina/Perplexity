@@ -1,10 +1,34 @@
 import { io } from "socket.io-client";
 
-export const initializeSocketConnection = () => {
-  const socket = io(import.meta.env.VITE_API_URL || "http://localhost:3000", {
-    withCredentials: true,
-  });
+let socket;
+
+export const initializeSocketConnection = ({ onChatMessage } = {}) => {
+  if (!socket) {
+    socket = io(import.meta.env.VITE_API_URL || "http://localhost:3000", {
+      withCredentials: true,
+    });
+  }
+
+  socket.off("chat:message");
+  if (typeof onChatMessage === "function") {
+    socket.on("chat:message", onChatMessage);
+  }
+
   socket.on("connect", () => {
     console.log("Connected to socket.io server");
   });
+
+  socket.on("connect_error", (error) => {
+    console.error("Socket connection error:", error.message);
+  });
+
+  return socket;
+};
+
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.off("chat:message");
+    socket.disconnect();
+    socket = null;
+  }
 };
