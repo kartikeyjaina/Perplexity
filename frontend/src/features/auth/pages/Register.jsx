@@ -41,9 +41,7 @@ const Register = () => {
           {submitted && !error && (
             <div className="mt-4 rounded-lg bg-green-950/50 px-4 py-3 text-sm text-green-200 border border-green-800">
               <p className="font-semibold">✓ Registration successful!</p>
-              <p className="mt-2">
-                Check your email to verify your account before logging in.
-              </p>
+              <p className="mt-2">You can log in now.</p>
             </div>
           )}
           <form onSubmit={submitForm} className="mt-8 space-y-5">

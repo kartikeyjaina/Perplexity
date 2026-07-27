@@ -32,7 +32,6 @@ export function useAuth() {
         dispatch(setLoading(true));
         dispatch(setError(null));
         await register({ email, username, password });
-        // User needs to verify email before login
         dispatch(setError(null));
       } catch (error) {
         dispatch(

@@ -1,6 +1,4 @@
 import jwt from "jsonwebtoken";
-
-import { sendEmail } from "../services/mail.service.js";
 import userModel from "../models/user.model.js";
 
 export async function register(req, res) {
@@ -11,42 +9,15 @@ export async function register(req, res) {
     try {
       const user = await userModel.create({ username, email, password });
 
-      const emailVerificationToken = jwt.sign(
-        { email: user.email },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" },
-      );
-      const verifyUrl = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${emailVerificationToken}`;
-
-      let emailSent = true;
-      try {
-        await sendEmail({
-          to: email,
-          subject: "Welcome to Perplexity!",
-          html: `
-                    <p>Hi ${username},</p>
-                    <p>Thank you for registering at <strong>Perplexity</strong>. We're excited to have you on board!</p>
-                    <a href=${verifyUrl}>Verify Email</a>
-                    <p>Best regards,<br>The Perplexity Team</p>
-            `,
-        });
-      } catch (mailError) {
-        emailSent = false;
-        console.error("Verification email could not be sent:", mailError);
-      }
-
       res.status(201).json({
         success: true,
-        message: emailSent
-          ? "User registered successfully"
-          : "User registered successfully, but the verification email could not be sent",
+        message: "User registered successfully",
         data: {
           user: {
             id: user._id,
             username: user.username,
             email: user.email,
           },
-          emailSent,
         },
       });
     } catch (mongoErr) {
@@ -85,14 +56,6 @@ export async function login(req, res) {
         data: null,
       });
     }
-    if (!user.verified) {
-      return res.status(403).json({
-        success: false,
-        message: "Email not verified",
-        err: "Please verify your email before logging in",
-        data: null,
-      });
-    }
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -123,7 +86,6 @@ export async function login(req, res) {
         user: {
           username: user.username,
           email: user.email,
-          verified: user.verified,
           id: user._id,
         },
       },
@@ -158,7 +120,6 @@ export async function getMe(req, res) {
         user: {
           username: user.username,
           email: user.email,
-          verified: user.verified,
           id: user._id,
         },
       },
@@ -176,6 +137,7 @@ export async function getMe(req, res) {
 
 export async function logout(req, res) {
   try {
+    const isProd = process.env.NODE_ENV === "production";
     res.clearCookie("token", {
       httpOnly: true,
       sameSite: isProd ? "none" : "lax",
@@ -193,36 +155,6 @@ export async function logout(req, res) {
       success: false,
       message: "Server error during logout",
       err: error.message,
-      data: null,
-    });
-  }
-}
-
-export async function verifyEmail(req, res) {
-  const { token } = req.query;
-  let user = null;
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    user = await userModel.findOne({ email: decoded.email });
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid token",
-        err: "User not found",
-        data: null,
-      });
-    }
-    user.verified = true;
-    await user.save();
-    const html = `<h1>Email Verified Successfully</h1>
-  <p>You can now login</p>`;
-    res.send(html);
-  } catch (err) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid or expired token",
-      err: err.message,
       data: null,
     });
   }
