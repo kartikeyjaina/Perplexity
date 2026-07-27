@@ -4,17 +4,25 @@ import { google } from "googleapis";
 
 const OAuth2 = google.auth.OAuth2;
 
-const oauth2Client = new OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  "https://developers.google.com/oauthplayground",
-);
-
-oauth2Client.setCredentials({
-  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-});
-
 let cachedTransporter = null;
+
+function hasSmtpConfig() {
+  return Boolean(
+    process.env.SMTP_HOST &&
+      process.env.SMTP_PORT &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS,
+  );
+}
+
+function hasOauthConfig() {
+  return Boolean(
+    process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN &&
+      process.env.GOOGLE_USER,
+  );
+}
 
 function isOauthCredentialError(error) {
   const message = `${error?.message || ""} ${error?.response?.data?.error || ""}`.toLowerCase();
@@ -26,15 +34,47 @@ function isOauthCredentialError(error) {
   );
 }
 
+function isSmtpAuthError(error) {
+  const message = `${error?.message || ""}`.toLowerCase();
+  return (
+    message.includes("authentication failed") ||
+    message.includes("invalid login") ||
+    message.includes("eauth")
+  );
+}
+
 function formatMailError(error, fallbackMessage) {
-  const detail = error?.response?.data?.error_description || error?.message || fallbackMessage;
+  const detail =
+    error?.response?.data?.error_description || error?.message || fallbackMessage;
   const wrappedError = new Error(fallbackMessage);
   wrappedError.cause = error;
   wrappedError.details = detail;
   return wrappedError;
 }
 
-async function createTransporter() {
+function createSmtpTransporter() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: String(process.env.SMTP_SECURE).toLowerCase() === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
+
+async function createOauthTransporter() {
+  const oauth2Client = new OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    "https://developers.google.com/oauthplayground",
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+  });
+
   try {
     const accessToken = await oauth2Client.getAccessToken();
 
@@ -61,11 +101,29 @@ async function createTransporter() {
   }
 }
 
+async function createTransporter() {
+  if (hasSmtpConfig()) {
+    return createSmtpTransporter();
+  }
+
+  if (hasOauthConfig()) {
+    return createOauthTransporter();
+  }
+
+  throw new Error(
+    "Email configuration is missing. Set SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS or Google OAuth env vars.",
+  );
+}
+
 async function getTransporter() {
   if (!cachedTransporter) {
     cachedTransporter = await createTransporter();
     await cachedTransporter.verify();
-    console.log("Email transporter ready");
+    console.log(
+      hasSmtpConfig()
+        ? "SMTP email transporter ready"
+        : "OAuth email transporter ready",
+    );
   }
 
   return cachedTransporter;
@@ -73,7 +131,7 @@ async function getTransporter() {
 
 export async function sendEmail({ to, subject, html, text }) {
   const mailOptions = {
-    from: process.env.GOOGLE_USER,
+    from: process.env.SMTP_FROM || process.env.GOOGLE_USER || process.env.SMTP_USER,
     to,
     subject,
     html,
@@ -85,25 +143,18 @@ export async function sendEmail({ to, subject, html, text }) {
     const details = await transporter.sendMail(mailOptions);
     console.log("Email sent:", details);
     return details;
-  } catch (err) {
-    if (isOauthCredentialError(err)) {
-      cachedTransporter = null;
+  } catch (error) {
+    cachedTransporter = null;
+
+    if (isOauthCredentialError(error) || isSmtpAuthError(error)) {
       throw formatMailError(
-        err,
-        "Gmail OAuth credentials are invalid or expired",
+        error,
+        hasSmtpConfig()
+          ? "SMTP credentials are invalid or expired"
+          : "Gmail OAuth credentials are invalid or expired",
       );
     }
 
-    console.error("Email send failed. Retrying with fresh transporter:", err);
-    cachedTransporter = null;
-
-    try {
-      const transporter = await getTransporter();
-      const details = await transporter.sendMail(mailOptions);
-      console.log("Email sent:", details);
-      return details;
-    } catch (retryErr) {
-      throw formatMailError(retryErr, "Failed to send email");
-    }
+    throw formatMailError(error, "Failed to send email");
   }
 }
